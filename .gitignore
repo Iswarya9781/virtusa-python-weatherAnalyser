@@ -1,0 +1,5 @@
+/pycache
+*.pyc
+*.pyo   
+__pycache__/
+data/weather_data.csv   

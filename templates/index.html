@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weather Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background-color: #f0f8ff;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px auto;
+            width: 60%;
+            border-radius: 10px;
+            box-shadow: 0 0 10px gray;
+        }
+        input {
+            padding: 10px;
+            width: 200px;
+        }
+        button {
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🌦 Weather Dashboard</h1>
+
+<!-- 🔍 CITY INPUT -->
+<form method="POST">
+    <input type="text" name="city" placeholder="Enter city (e.g. Chennai)" required>
+    <button type="submit">Search</button>
+</form>
+
+{% if error %}
+    <p style="color:red;">Error:{{ error }}</p>
+{% endif %}
+
+{% if avg_temp %}
+
+<div class="card">
+    <h2>📍 City: {{ city }}</h2>
+    <h2>📊 Insights</h2>
+    <p>Average Temperature: {{ avg_temp }} °C</p>
+    <p>Average Humidity: {{ avg_humidity }} %</p>
+</div>
+
+<div class="card">
+    <h2>🔮 Prediction</h2>
+    <p>Tomorrow's Temperature: {{ prediction }} °C</p>
+</div>
+
+<div class="card">
+    <h2>📈 Temperature Trend</h2>
+    <img src="/static/temp_plot.png?{{ range(1,1000) | random }}" width="80%">
+</div>
+
+{% endif %}
+
+</body>
+</html>

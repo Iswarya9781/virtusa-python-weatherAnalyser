@@ -1,64 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Dashboard</title>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         body {
-            font-family: Arial;
+            font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #f0f8ff;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #74ebd5, #9face6);
         }
+
+        h1 {
+            color: white;
+            margin-top: 30px;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        input {
+            padding: 12px;
+            width: 220px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
         .card {
-            background: white;
+            background: rgba(255,255,255,0.92);
             padding: 20px;
             margin: 20px auto;
-            width: 60%;
-            border-radius: 10px;
-            box-shadow: 0 0 10px gray;
+            width: 75%;
+            border-radius: 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            transition: 0.3s;
         }
-        input {
-            padding: 10px;
-            width: 200px;
+
+        .card:hover {
+            transform: translateY(-5px);
         }
-        button {
-            padding: 10px;
+
+        p {
+            font-size: 18px;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .chart-box {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
         }
     </style>
 </head>
+
 <body>
 
-<h1>🌦 Weather Dashboard</h1>
+    <h1>🌦 Weather Dashboard</h1>
 
-<!-- 🔍 CITY INPUT -->
-<form method="POST">
-    <input type="text" name="city" placeholder="Enter city (e.g. Chennai)" required>
-    <button type="submit">Search</button>
-</form>
+  
+    <form method="POST">
+        <input type="text" name="city" placeholder="Enter city (e.g. Chennai)" required>
+        <button type="submit">Search</button>
+    </form>
 
-{% if error %}
-    <p style="color:red;">Error:{{ error }}</p>
+    {% if error %}
+        <p class="error">Error: {{ error }}</p>
+    {% endif %}
+
+    {% if city %}
+
+   
+    <div class="card">
+        <h2>📍 City: {{ city }}</h2>
+        <h2>📊 Current Weather</h2>
+        <p>🌡 Temperature: {{ temp }} °C</p>
+        <p>💧 Humidity: {{ humidity }} %</p>
+        <p>📌 Pressure: {{ pressure }} hPa</p>
+        <p>☁ Weather: {{ description }}</p>
+    </div>
+
+    
+    <div class="card">
+        <h2>🔮 Prediction</h2>
+        <p>Tomorrow's Temperature: {{ prediction }} °C</p>
+    </div>
+
+    <div class="card">
+        <h2>📈 Temperature Trend</h2>
+        <div class="chart-box">
+            <canvas id="tempChart"></canvas>
+        </div>
+    </div>
+
+    {% if dates is defined and temps is defined and dates|length > 0 %}
+<script>
+const labels = {{ dates|default([])|tojson|safe }};
+const temps = {{ temps|default([])|tojson|safe }};
+
+const canvas = document.getElementById("tempChart");
+
+if (canvas) {
+    const ctx = canvas.getContext("2d");
+
+    new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Temperature °C",
+                data: temps,
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+</script>
 {% endif %}
 
-{% if avg_temp %}
-
-<div class="card">
-    <h2>📍 City: {{ city }}</h2>
-    <h2>📊 Insights</h2>
-    <p>Average Temperature: {{ avg_temp }} °C</p>
-    <p>Average Humidity: {{ avg_humidity }} %</p>
-</div>
-
-<div class="card">
-    <h2>🔮 Prediction</h2>
-    <p>Tomorrow's Temperature: {{ prediction }} °C</p>
-</div>
-
-<div class="card">
-    <h2>📈 Temperature Trend</h2>
-    <img src="/static/temp_plot.png?{{ range(1,1000) | random }}" width="80%">
-</div>
-
-{% endif %}
+    {% endif %}
 
 </body>
 </html>

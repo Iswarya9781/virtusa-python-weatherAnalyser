@@ -1,16 +1,13 @@
-from flask import Flask, render_template,request
+from flask import Flask, render_template, request
 import os
 import sys
+import pandas as pd
 
-# Base directory setup
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
-# Correct imports
 from modules.fetch_weather import fetch_weather
 from modules.store_data import save_to_csv
-from modules.analyze import analyze_data
-from modules.visualize import plot_temperature
 from modules.predict import predict_temperature
 
 app = Flask(
@@ -19,55 +16,92 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, 'static')
 )
 
+DATA_FILE = os.path.join(BASE_DIR, "data", "weather_data.csv")
+
 @app.route("/", methods=["GET", "POST"])
 def home():
     try:
-        city = None
-
-        # Get user input
         if request.method == "POST":
             city = request.form.get("city")
-        if not city:
+
+            if not city:
+                return render_template(
+                    "index.html",
+                    error="Enter city",
+                    city=None,
+                    dates=[],
+                    temps=[],
+                    humidities=[]
+                )
+
+            data = fetch_weather(city)
+
+            if not data:
+                return render_template(
+                    "index.html",
+                    error="City not found",
+                    city=None,
+                    dates=[],
+                    temps=[],
+                    humidities=[]
+                )
+
+            save_to_csv(data)
+
+            prediction = None
+            if os.path.exists(DATA_FILE):
+                try:
+                    prediction = predict_temperature()
+                except Exception:
+                    prediction = None
+
+            dates = []
+            temps = []
+            humidities = []
+
+            if os.path.exists(DATA_FILE):
+                df = pd.read_csv(DATA_FILE)
+
+                df["date"] = pd.to_datetime(df["date"], errors="coerce")
+                df["temp"] = pd.to_numeric(df["temp"], errors="coerce")
+                df["humidity"] = pd.to_numeric(df["humidity"], errors="coerce")
+
+                df = df.dropna()
+                df = df.tail(10)
+
+                dates = df["date"].dt.strftime("%d-%m %H:%M").tolist()
+                temps = df["temp"].tolist()
+                humidities = df["humidity"].tolist()
+
             return render_template(
                 "index.html",
-                 avg_temp=None,
-                 avg_humidity=None,
-                 prediction=None,
-                 city=None,
-                 error="Please enter a city"
-    )
-
-        print("Fetching data for:", city)
-
-        data = fetch_weather(city)
-        # Debugging line to check the fetched data
-        if not data:
-            raise RuntimeError("Invalid city or API error")
-
-        save_to_csv(data)
-
-        insights = analyze_data()
-        plot_temperature()
-        prediction = predict_temperature()
+                city=city,
+                temp=data["temperature"],
+                humidity=data["humidity"],
+                pressure=data["pressure"],
+                description=data["description"],
+                prediction=round(prediction, 2) if prediction is not None else None,
+                dates=dates,
+                temps=temps,
+                humidities=humidities,
+                error=None
+            )
 
         return render_template(
             "index.html",
-            avg_temp=round(insights["avg_temp"], 2),
-            avg_humidity=round(insights["avg_humidity"], 2),
-            prediction=round(prediction, 2),
-            city=city,
-            error=None
+            dates=[],
+            temps=[],
+            humidities=[]
         )
 
     except Exception as e:
         return render_template(
             "index.html",
-            avg_temp=None,
-            avg_humidity=None,
-            prediction=None,
-            city=None,
-            error=str(e)
+            error=str(e),
+            dates=[],
+            temps=[],
+            humidities=[]
         )
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)

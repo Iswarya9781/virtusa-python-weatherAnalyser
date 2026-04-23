@@ -1,31 +1,36 @@
 import requests
-from config import API_KEY, City
+from config import API_KEY
 
 def fetch_weather(city):
     if not city:
-        print("No city provided")
         return None
 
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+    url = "https://api.openweathermap.org/data/2.5/weather"
+
+    params = {
+        "q": f"{city},IN",      # use India country code
+        "appid": API_KEY,
+        "units": "metric"
+    }
 
     try:
-        response = requests.get(url)
+        response = requests.get(url, params=params, timeout=5)
         data = response.json()
-        print("requested city:", city)  # Debugging line to check the requested city
-        print("API response:", data)  # Debugging line to check the API response
 
-        if "main" not in data:
-            print("API Error:", data)
+        # if city invalid
+        if response.status_code != 200 or "main" not in data:
             return None
 
         weather = {
-            "temperature": data["main"]["temp"],   
+            "temperature": data["main"]["temp"],
+            "feels_like": data["main"]["feels_like"],
             "humidity": data["main"]["humidity"],
             "pressure": data["main"]["pressure"],
+            "description": data["weather"][0]["description"],
+            "city": data["name"]
         }
 
         return weather
 
-    except Exception as e:
-        print(f"Error fetching weather data: {e}")
+    except requests.exceptions.RequestException:
         return None
